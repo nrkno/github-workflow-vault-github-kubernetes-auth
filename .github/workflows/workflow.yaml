@@ -56,8 +56,8 @@ jobs:
     runs-on: ${{ inputs.runs-on }}
     if: inputs.vault-job-enabled
     outputs:
-      KUBE_CONFIG: {{ steps.k8s_creds.outputs.KUBE_CONFIG }}
-      VAULT_TOKEN: {{ steps.k8s_creds.outputs.VAULT_TOKEN }}
+      KUBE_CONFIG: ${{ steps.k8s_creds.outputs.KUBE_CONFIG }}
+      VAULT_TOKEN: ${{ steps.k8s_creds.outputs.VAULT_TOKEN }}
     steps:
       # Checkout code
       - name: Checkout
