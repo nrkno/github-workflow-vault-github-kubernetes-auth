@@ -48,6 +48,14 @@ on:
         description: 'Name of script used for templating config file'
         type: string
         default: templating.py
+    
+    outputs:
+      KUBE_CONFIG: 
+        description: Config file for kubernetes
+        value: ${{ jobs.vault.outputs.KUBE_CONFIG }}
+      VAULT_TOKEN: 
+        description: token from vault-auth step
+        value: ${{ jobs.vault.outputs.VAULT_TOKEN }}
 
 name: Github auth to Vault to get Kubernetes ServiceAccount  
 jobs:
