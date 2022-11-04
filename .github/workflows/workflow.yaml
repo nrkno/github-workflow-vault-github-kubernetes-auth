@@ -48,7 +48,6 @@ on:
         description: 'Name of script used for templating config file'
         type: string
         default: templating.py
-    
     outputs:
       KUBE_CONFIG: 
         description: Config file for kubernetes
@@ -62,7 +61,6 @@ jobs:
   vault:
     name: Vault auth and retrival of secrets for kubernetes auth
     runs-on: ${{ inputs.runs-on }}
-    if: inputs.vault-job-enabled
     outputs:
       KUBE_CONFIG: ${{ steps.k8s_creds.outputs.KUBE_CONFIG }}
       VAULT_TOKEN: ${{ steps.k8s_creds.outputs.VAULT_TOKEN }}
@@ -222,4 +220,3 @@ jobs:
           
           # Remove created files before continuing
           shred -u config payload.json
-
