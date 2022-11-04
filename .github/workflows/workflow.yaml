@@ -11,6 +11,7 @@ on:
         description: 'List of file to ignore (will be deleted before running steps)'
         type: string
         default: ""
+      
       # Vault settings
       vault-export-token:
         description: 'Export vault-token as environemtn variable.'
@@ -28,6 +29,7 @@ on:
         description: 'Should this be a clusterrolebinding?'
         type: boolean
         default: false
+      
       # Kubernetes settings
       kubernetes-cluster-name:
         description: 'Name of cluster in which ServiceAccount will be created'
