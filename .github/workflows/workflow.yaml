@@ -1,5 +1,6 @@
 on:
   workflow_call:
+    # Input variables
     inputs:
       # General settings
       working-directory:
@@ -48,6 +49,8 @@ on:
         description: 'Name of script used for templating config file'
         type: string
         default: templating.py
+    
+    # Output variables
     outputs:
       KUBE_CONFIG: 
         description: Config file for kubernetes
