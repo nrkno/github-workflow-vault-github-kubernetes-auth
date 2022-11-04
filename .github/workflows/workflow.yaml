@@ -65,7 +65,7 @@ on:
         description: token from vault-auth step
         value: ${{ jobs.vault.outputs.VAULT_TOKEN }}
 
-name: Github auth to Vault to get Kubernetes ServiceAccount  
+name: Vault
 jobs:
   vault:
     name: Vault auth and retrival of secrets for kubernetes auth
