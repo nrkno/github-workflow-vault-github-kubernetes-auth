@@ -7,6 +7,10 @@ on:
         description: 'Working directory of this workflow'
         type: string
         default: .
+      runs-on:
+        description: 'Where should this job run'
+        type: string
+        default: self-hosted
       ignore-files:
         description: 'List of file to ignore (will be deleted before running steps)'
         type: string

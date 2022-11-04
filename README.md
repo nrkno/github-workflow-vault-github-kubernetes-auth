@@ -15,6 +15,9 @@ jobs:
       # Working directory of this workflow
       # Default: .
       working-directory: .
+      # Where should this job run
+      # default: self-hosted
+      runs-on: self-hosted
       # List of file to ignore (will be deleted before running steps)
       # Default: ""
       ignore-files: ""
