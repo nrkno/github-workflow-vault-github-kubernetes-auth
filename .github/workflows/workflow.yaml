@@ -156,7 +156,7 @@ jobs:
 
       # Get secrets to authenticate to kubernetes
       - name: Get Cluster CA and API-host
-        uses: hashicorp/vault-action@v2.4.2
+        uses: hashicorp/vault-action@v2.4.3
         with:
           url: ${{ secrets.PLATTFORM_VAULT_URL }}
           role: ${{ inputs.vault-role }}
