@@ -18,7 +18,7 @@ on:
       
       # Vault settings
       vault-export-token:
-        description: 'Export vault-token as environemtn variable.'
+        description: 'Export vault-token as environment variable.'
         type: boolean
         default: true
       vault-role:
@@ -46,15 +46,25 @@ on:
       kubernetes-config-template:
         description: 'name of template file for kube-config file'
         type: string
-        default: config.tmpl
+        default: "config.tmpl"
       kubernetes-config:
         description: 'name of kube-config file'
         type: string
-        default: config
+        default: "config"
       kubernetes-templating-script:
         description: 'Name of script used for templating config file'
         type: string
-        default: templating.py
+        default: "templating.py"
+      kubernetes-role:
+        description: 'Name of kubernetes role'
+        type: string
+        default: "edit"
+    
+    # # Secrets
+    # secrets:
+    #   vault-url:
+    #     description: 'URL to use to communicate with vault'
+    #     required: true
     
     # Output variables
     outputs:
@@ -65,10 +75,9 @@ on:
         description: token from vault-auth step
         value: ${{ jobs.vault.outputs.VAULT_TOKEN }}
 
-name: Vault
 jobs:
   vault:
-    name: Vault auth and retrival of secrets for kubernetes auth
+    name: Vault auth and retrieval of secrets for kubernetes auth
     runs-on: ${{ inputs.runs-on }}
     outputs:
       KUBE_CONFIG: ${{ steps.k8s_creds.outputs.KUBE_CONFIG }}
@@ -78,49 +87,48 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # Delete ignored files inside repo before running.
-      # Care is taken to prevent deletion of files outside
-      # of the repository root.
-      - name: Remove ignored files
-        if: inputs.ignore-files != ''
-        env:
-          IGNORE_FILES: ${{ inputs.ignore-files }}
-        shell: python
-        working-directory: ${{ inputs.working-directory }}
-        run: |
-          import os
-          import pathlib
-          import shutil
+      # # Delete ignored files inside repo before running.
+      # # Care is taken to prevent deletion of files outside
+      # # of the repository root.
+      # - name: Remove ignored files
+      #   if: inputs.ignore-files != ''
+      #   env:
+      #     IGNORE_FILES: ${{ inputs.ignore-files }}
+      #   shell: python
+      #   working-directory: ${{ inputs.working-directory }}
+      #   run: |
+      #     import os
+      #     import pathlib
+      #     import shutil
 
-          fpaths = os.getenv("IGNORE_FILES", "")
-          for fpath in [s.strip() for s in fpaths.split(",") if s]:
-            # Make sure we only delete files in repo root
-            safe_dir = os.getcwd() + os.sep
-            if not os.path.commonprefix((os.path.realpath(fpath),safe_dir)) == safe_dir:
-              raise ValueError(f"Not allowed to delete path outside of repo root: {fpath}")
+      #     fpaths = os.getenv("IGNORE_FILES", "")
+      #     for fpath in [s.strip() for s in fpaths.split(",") if s]:
+      #       # Make sure we only delete files in repo root
+      #       safe_dir = os.getcwd() + os.sep
+      #       if not os.path.commonprefix((os.path.realpath(fpath),safe_dir)) == safe_dir:
+      #         raise ValueError(f"Not allowed to delete path outside of repo root: {fpath}")
 
-            # Delete path
-            p = pathlib.Path(fpath)
-            if p.is_file():
-              p.unlink()
-              print("deleted file:", p.name)
-            elif p.is_dir():
-              shutil.rmtree(p.name)
-              print("deleted directory:", p.name)
+      #       # Delete path
+      #       p = pathlib.Path(fpath)
+      #       if p.is_file():
+      #         p.unlink()
+      #         print("deleted file:", p.name)
+      #       elif p.is_dir():
+      #         shutil.rmtree(p.name)
+      #         print("deleted directory:", p.name)
 
       # Get version of workflow
       - name: Get workflow ref
         id: workflow_tag
         shell: bash
         run: |
-          workflow_file="${GITHUB_WORKFLOW}"
+          workflow_file="${{ github.workflow }}"
           if ! [ -f "${workflow_file}" ]
           then
-            workflow_file="$(grep -l "^.*name: ${GITHUB_WORKFLOW}$" .github/workflows/*)"
+            workflow_file="$(grep -l "name:.*${{ github.workflow }}" .github/workflows/*)"
           fi
           workflow_tag="$(awk -F @ '/github-workflow-vault-github-kubernetes-auth/ {print $2}' "${workflow_file}")"
           echo "WORKFLOW_TAG=${workflow_tag}" >> $GITHUB_ENV
-      
       # Checkout workflow to get templates
       - name: Checkout workflow
         id: checkout_workflow
@@ -129,7 +137,6 @@ jobs:
           repository: nrkno/github-workflow-vault-github-kubernetes-auth
           ref: ${{ env.WORKFLOW_TAG }}
           path: .github-workflow-vault-github-kubernetes-auth
-      
       # Copy config template from workflow
       - name: Set configuration
         id: set_config
@@ -139,15 +146,15 @@ jobs:
           KUBERNETES_CONFIG_TEMPLATE: ${{ inputs.kubernetes-config-template }}
           KUBERNETES_CONFIG: ${{ inputs.kubernetes-config }}
         run: |
+          pwd
           if [ -f "$K8S_CONFIG_TEMPLATE" ]
           then
             echo "Using callers template for kube-config"
           else
             echo "Using workflow template for kube-config"
-            cp -- "${GITHUB_WORKSPACE}/.github-workflow-vault-github-kubernetes-auth/templates/${KUBERNETES_CONFIG_TEMPLATE" "${KUBERNETES_CONFIG}"
-            cp -- "${GITHUB_WORKSPACE}/.github-workflow-vault-github-kubernetes-auth/scrips/${KUBERNETES_TEMPLATING_SCRIPT}" "${KUBERNETES_TEMPLATING_SCRIPT}"
+            cp ".github-workflow-vault-github-kubernetes-auth/templates/${KUBERNETES_CONFIG_TEMPLATE}" "${KUBERNETES_CONFIG_TEMPLATE}"
+            cp ".github-workflow-vault-github-kubernetes-auth/scripts/${KUBERNETES_TEMPLATING_SCRIPT}" "${KUBERNETES_TEMPLATING_SCRIPT}"
           fi
-      
       # Cleanup workflow after copy
       - name: Remove workflow checkout
         shell: bash
@@ -164,13 +171,12 @@ jobs:
           path: jwt-github
           exportToken: true
           secrets: |
-            secret/applications/shared/kubernetes-config/${{ env.CLUSTER_NAME }} ca_cert | CLUSTER_CA_CERT ;
-            secret/applications/shared/kubernetes-config/${{ env.CLUSTER_NAME }} host | CLUSTER_HOST ;
+            secret/applications/shared/kubernetes-config/${{ inputs.kubernetes-cluster-name }} ca_cert | CLUSTER_CA_CERT ;
+            secret/applications/shared/kubernetes-config/${{ inputs.kubernetes-cluster-name }} host | CLUSTER_HOST ;
 
-      # Get ServiceAccount for cluster aks-plattform-int-nonprod-weu
-      - name: Get Kubernetes ServiceAccount for cluster aks-plattform-int-nonprod-weu
+      # Get ServiceAccount for cluster
+      - name: Get Kubernetes ServiceAccount for cluster
         id: k8s_creds
-        if: inputs.get-k8s-creds
         shell: bash
         env:
           CLUSTER_NAME: ${{ inputs.kubernetes-cluster-name }}
@@ -191,7 +197,7 @@ jobs:
           > payload.json
 
           # Create ServiceAccount and get token and name for created ServiceAccount
-          K8S_CREDS_REQUEST=$(curl --write-out '%{http_code}' -s -X POST -H "X-Vault-Token: ${VAULT_TOKEN}" --data @payload.json --output response.json "{{ '${{ secrets.PLATTFORM_VAULT_URL }}' }}/v1/kubernetes-${CLUSTER_NAME}/creds/${VAULT_ROLE}")
+          K8S_CREDS_REQUEST=$(curl --write-out '%{http_code}' -s -X POST -H "X-Vault-Token: ${VAULT_TOKEN}" --data @payload.json --output response.json "${{ secrets.PLATTFORM_VAULT_URL }}/v1/kubernetes-${CLUSTER_NAME}/creds/${VAULT_ROLE}-${{ inputs.kubernetes-role }}")
           if [[ "${K8S_CREDS_REQUEST}" == "200" ]]
           then
             SERVICE_ACCOUNT_NAME=$(cat response.json | jq -r '.data.service_account_name')
@@ -206,26 +212,28 @@ jobs:
           CLUSTER_CA_CERT_B64=$(base64 -w 0 <<<${CLUSTER_CA_CERT})
 
           # To smooth the kubeconfig creation we use a template to create a config-file
-          .github/scripts/templating.py \
-          CLUSTER_NAME={{ '${CLUSTER_NAME}' }} \
-          CLUSTER_NAMESPACE={{ '${CLUSTER_NAMESPACE}' }} \
-          CLUSTER_HOST={{ '${CLUSTER_HOST}' }} \
-          CLUSTER_CA_CERT="{{ '${CLUSTER_CA_CERT_B64}' }}" \
-          SERVICE_ACCOUNT_NAME="{{ '${SERVICE_ACCOUNT_NAME}' }}" \
-          SERVICE_ACCOUNT_TOKEN="{{ '${SERVICE_ACCOUNT_TOKEN}' }}" \
+          ./${{ inputs.kubernetes-templating-script }} \
+          CLUSTER_NAME=${CLUSTER_NAME} \
+          CLUSTER_NAMESPACE=${CLUSTER_NAMESPACE} \
+          CLUSTER_HOST=${CLUSTER_HOST} \
+          CLUSTER_CA_CERT="${CLUSTER_CA_CERT_B64}" \
+          SERVICE_ACCOUNT_NAME="${SERVICE_ACCOUNT_NAME}" \
+          SERVICE_ACCOUNT_TOKEN="${SERVICE_ACCOUNT_TOKEN}" \
           < ${KUBERNETES_CONFIG_TEMPLATE} > ${KUBERNETES_CONFIG}
+
+          cat ${KUBERNETES_CONFIG} | base64 -w 0 > config2
 
           # Feed the created file into environment variable KUBE_CONFIG
           echo 'KUBE_CONFIG<<EOF' >> $GITHUB_OUTPUT
-          cat ${KUBERNETES_CONFIG} >> $GITHUB_OUTPUT
+          cat config2 >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
 
-          if [[ ${VAULT_EXPORT_TOKEN} == "true" ]]
-          then
-            echo "VAULT_TOKEN=${VAULT_TOKEN}" >> $GITHUB_OUTPUT
-          else
-            echo "VAULT_TOKEN=None" >> $GITHUB_OUTPUT
-          fi
+          # if [[ ${VAULT_EXPORT_TOKEN} == "true" ]]
+          # then
+          #   echo "VAULT_TOKEN=${VAULT_TOKEN}" | base64 -w 0 >> $GITHUB_OUTPUT
+          # else
+          #   echo "VAULT_TOKEN=None" | base64 -w 0 >> $GITHUB_OUTPUT
+          # fi
           
           # Remove created files before continuing
-          shred -u config payload.json
+          shred -u config config2 payload.json
