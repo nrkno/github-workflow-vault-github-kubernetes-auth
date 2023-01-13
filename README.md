@@ -1,3 +1,6 @@
+# !!THIS WORKFLOW IS DEPRECATED! SEE https://github.com/nrkno/github-action-vault-to-k8s-config FOR NEW WAY TO AUTHENTICATE
+
+
 # github-workflow-vault-github-kubernetes-auth
 
 Reusable GitHub workflow for automaticly authenticate to vault and get kubernetes credentials dynamicaly
